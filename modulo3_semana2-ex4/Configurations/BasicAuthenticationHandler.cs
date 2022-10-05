@@ -8,19 +8,20 @@ using System.Text.Encodings.Web;
 
 namespace modulo3_semana2_ex4.Configurations
 {
-    public class BasicAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+    public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
-        private readonly IUsuarioService _usuarioService;
+        private readonly IUsuarioService _userService;
 
-        public BasicAuthHandler(
-            IUsuarioService usuarioService, 
+        public BasicAuthenticationHandler(
+            IUsuarioService userService,
             IOptionsMonitor<AuthenticationSchemeOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
             ISystemClock clock
-            ) : base (options, logger, encoder, clock)
+        )
+            : base(options, logger, encoder, clock)
         {
-            _usuarioService = usuarioService;
+            _userService = userService;
         }
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -40,28 +41,30 @@ namespace modulo3_semana2_ex4.Configurations
             var corpoBase64 = Convert.FromBase64String(authHeader.Parameter);
             var credenciais = Encoding.UTF8.GetString(corpoBase64).Split(':');
 
-            if(credenciais.Length != 2)
+            if (credenciais.Length != 2)
             {
-                return AuthenticateResult.Fail("Autenticação falhou, header não enviado");
+                return AuthenticateResult.Fail("Autenticação falhou, header inválido");
             }
 
             var nomeUsuario = credenciais.FirstOrDefault();
             var senha = credenciais.LastOrDefault();
 
-            if (!_usuarioService.AutenticarUsuario(nomeUsuario, senha))
-            {
-                return AuthenticateResult.Fail("Autenticação falhou, header não enviado");
-            }
+            if (!_userService.AutenticarUsuario(nomeUsuario, senha))
+                return AuthenticateResult.Fail("Autenticação falhou, credenciais inválidas");
 
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, nomeUsuario),
+            var claims = new[] {
+                new Claim(ClaimTypes.Name, nomeUsuario)
             };
-            var identity = new ClaimsIdentity(claims, Scheme.Name);
+            var identity = new ClaimsIdentity(
+                claims,
+                Scheme.Name
+            );
             var principal = new ClaimsPrincipal(identity);
+
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
 
             return AuthenticateResult.Success(ticket);
         }
+
     }
 }

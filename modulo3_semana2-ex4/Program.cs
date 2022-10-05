@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using modulo3_semana2_ex4.Configurations;
 using modulo3_semana2_ex4.Data;
 using modulo3_semana2_ex4.Services;
@@ -9,19 +9,42 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services
-    .AddControllers().Services
+    .AddControllers();
+builder.Services
     .AddAuthentication("BasicAuthentication")
-        .AddScheme<AuthenticationSchemeOptions, BasicAuthHandler>("BasicAuthentication", null)
-        .Services
+    .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
+builder.Services
     .AddDbContext<BasicAuthContext>()
-    .AddScoped<IUsuarioService, UsuarioService>();
+    .AddScoped<IUsuarioService, UsuarioService>()
+    .AddEndpointsApiExplorer()
+    .AddSwaggerGen(swagger=>
+    {
+        swagger.AddSecurityDefinition("basic", new OpenApiSecurityScheme
+        {
+            Name = "Basic",
+            Type = SecuritySchemeType.Http,
+            Scheme = "basic",
+            In = ParameterLocation.Header,
+            Description = "Basic Authorization Header"
+        });
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+        swagger.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id="basic"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
+    });
 
-builder.Services.AddDbContextFactory<BasicAuthContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DB_BasicAuth")));
+
 
 var app = builder.Build();
 

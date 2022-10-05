@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace modulo3_semana2_ex4.Controllers
 {
@@ -8,21 +9,24 @@ namespace modulo3_semana2_ex4.Controllers
     [Authorize]
     public class ConsultasController : ControllerBase
     {
-        private string resultado;
-        [HttpGet]
+
+        [HttpGet("publicas")]
         [AllowAnonymous]
         public IActionResult GetSemAutorizacao()
-        {
-            resultado = "Hello stranger!";
-            return Ok(resultado);
-        }
+            => Ok(new
+            {
+                resultado = "Welcome stranger!"
+            });
 
-        [HttpGet("/privadas")]
+
+        [HttpGet("privadas")]
         [Authorize]
         public IActionResult GetComAutorizacao()
-        {
-            resultado = "You shall not pass! (If you are a balrog or unauthorized user)";
-            return Unauthorized(resultado);
-        }
+            => Ok(new
+            {
+                resultado = "Dados que apenas usuários logados podem ver",
+                usuarioLogado = User.FindFirstValue(ClaimTypes.Name)
+            });
+        
     }
 }
